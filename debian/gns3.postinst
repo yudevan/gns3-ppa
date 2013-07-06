@@ -1,0 +1,18 @@
+#!/bin/sh
+
+set -e
+
+#Create conf directory if required
+if [ "$1" = "configure" ]; then
+	if [ ! -d /etc/gns3 ]
+	then
+		mkdir /etc/gns3
+	fi
+fi
+
+#DEBHELPER#
+
+#Copy baseconfig files to examples directory
+if [ "$1" = "configure" ]; then
+	cp /usr/share/doc/gns3/baseconfig* /usr/local/share/examples/gns3/
+fi

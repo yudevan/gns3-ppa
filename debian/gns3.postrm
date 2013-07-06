@@ -1,0 +1,13 @@
+#!/bin/sh
+
+set -e
+
+#DEBHELPER#
+
+#Remove conf directory if required
+if [ "$1" = "purge" ]; then
+	if [ -d /etc/gns3 ]
+	then
+		rm -rf /etc/gns3
+	fi
+fi

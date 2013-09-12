@@ -1,0 +1,5 @@
+repo: b2f14b6bbf1898f815c70f435a8c72a165f78f83
+node: 94a2358b0b554ee630ff53e211c1728bbc249350
+branch: default
+latesttag: GNS3-0.8.4
+latesttagdistance: 1

@@ -10,8 +10,12 @@ Copyright: 2006-2013 Jeremy Grossmann
 		     Romain Lamaison
 License: GPL-2.0+
 
+Files: src/GNS3/Dynagen/*
+Copyright:	    Greg Anuzelli
+License: GPL-2.0+
+
 Files: debian/*
-Copyright: 2013 Daniel Lintott <maint@gns3.serverb.co.uk>
+Copyright: 2013 Daniel Lintott <daniel@serverb.co.uk>
 License: GPL-2.0+
 
 License: GPL-2.0+

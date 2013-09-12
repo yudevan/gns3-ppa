@@ -5,12 +5,6 @@ gns3 (0.8.4-1ppa1) quantal; urgency=low
 
  -- Daniel Lintott <daniel@serverb.co.uk>  Sat, 06 Jul 2013 20:17:16 +0100
 
-gns3 (0.8.4-RC3-1) unstable; urgency=low
-
-  * Imported Upstream Version 0.8.4-RC3
-
- -- Daniel Lintott <daniel@serverb.co.uk>  Fri, 17 May 2013 13:52:19 +0100
-
 gns3 (0.8.3-0.1) unstable; urgency=low
 
   [ Zang MingJie ]

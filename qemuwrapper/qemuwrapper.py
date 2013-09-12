@@ -82,7 +82,7 @@ msg = "WELCOME to qemuwrapper.py"
 debugmsg(2, msg)
 
 __author__ = 'Thomas Pani and Jeremy Grossmann'
-__version__ = '0.8.4'
+__version__ = '0.8.5'
 
 if platform.system() == 'Windows':
     if os.path.exists('Qemu\qemu-system-i386w.exe'):
@@ -502,7 +502,7 @@ class ASAInstance(QEMUInstance):
     def _kernel_options(self):
         debugmsg(3, "ASAInstance::_kernel_options()")
         
-        return  ('-append', self.kernel_cmdline)
+        return ('-append', self.kernel_cmdline)
 
 class AWPInstance(QEMUInstance):
 

@@ -29,7 +29,7 @@ from GNS3.Config.Objects import iosImageConf, hypervisorConf
 from GNS3.Node.IOSRouter import IOSRouter
 from GNS3.Uncompress import isIOScompressed, uncompressIOS
 from GNS3.Globals.Symbols import SYMBOLS
-from distutils.version import LooseVersion
+from distutils.version import StrictVersion
 from GNS3.CalcIDLEPCDialog import CalcIDLEPCDialog
 
 # known platforms and corresponding chassis
@@ -306,12 +306,12 @@ class IOSDialog(QtGui.QDialog, Ui_IOSDialog):
             self.label_IdlePCWarning.setText('')
 
         hypervisors = []
-        if self.checkBoxIntegratedHypervisor.checkState() == QtCore.Qt.Unchecked:
+        if self.checkBoxIntegratedHypervisor.checkState() == QtCore.Qt.Checked:
             # external hypervisor, don't use the hypervisor manager
             items = self.listWidgetHypervisors.selectedItems()
             if len(items) == 0:
                 QtGui.QMessageBox.warning(self, translate("IOSDialog", "IOS Configuration"), translate("IOSDialog", "No hypervisor selected, use the local hypervisor"))
-                self.checkBoxIntegratedHypervisor.setCheckState(QtCore.Qt.Checked)
+                self.checkBoxIntegratedHypervisor.setCheckState(QtCore.Qt.Unchecked)
                 imagekey = globals.GApp.systconf['dynamips'].HypervisorManager_binding + ':' + imagename
             else:
                 # get the selected hypervisor
@@ -321,13 +321,20 @@ class IOSDialog(QtGui.QDialog, Ui_IOSDialog):
                         hypervisor = globals.GApp.hypervisors[selected_hypervisor]
                         hypervisors.append(hypervisor.host + ':' + str(hypervisor.port))
                     imagekey = 'load-balanced-on-external-hypervisors:' + imagename
+                    if globals.GApp.iosimages.has_key(globals.GApp.systconf['dynamips'].HypervisorManager_binding + ':' + imagename):
+                        del globals.GApp.iosimages[globals.GApp.systconf['dynamips'].HypervisorManager_binding + ':' + imagename]
                 else:
                     selected_hypervisor = unicode(items[0].text(), 'utf-8', errors='replace')
                     hypervisor = globals.GApp.hypervisors[selected_hypervisor]
                     hypervisors.append(hypervisor.host + ':' + str(hypervisor.port))
                     imagekey = hypervisor.host + ':' + imagename
+                    
+                    if globals.GApp.iosimages.has_key('load-balanced-on-external-hypervisors:' + imagename):
+                        del globals.GApp.iosimages['load-balanced-on-external-hypervisors:' + imagename]
         else:
             imagekey = globals.GApp.systconf['dynamips'].HypervisorManager_binding + ':' + imagename
+            if globals.GApp.iosimages.has_key('load-balanced-on-external-hypervisors:' + imagename):
+                del globals.GApp.iosimages['load-balanced-on-external-hypervisors:' + imagename]
 
         if globals.GApp.iosimages.has_key(imagekey):
             # update an already existing IOS image
@@ -355,9 +362,6 @@ class IOSDialog(QtGui.QDialog, Ui_IOSDialog):
         conf.platform = str(self.comboBoxPlatform.currentText())
         conf.chassis = str(self.comboBoxChassis.currentText())
 
-        if conf.chassis == '3745':
-            QtGui.QMessageBox.warning(self, translate("IOSDialog", "Cisco 3745"), translate("IOSDialog", "There is a known bug when saving startup-configs with Cisco c3745 IOS images.\nIt is recommended to use c3725 instead."))
-        
         conf.idlepc = idlepc
         conf.idlemax = self.spinBoxIdlemax.value()
         conf.idlesleep = self.spinBoxIdlesleep.value()
@@ -385,6 +389,16 @@ class IOSDialog(QtGui.QDialog, Ui_IOSDialog):
         globals.GApp.iosimages[imagekey] = conf
         self.treeWidgetIOSimages.update()
         self.treeWidgetIOSimages.resizeColumnToContents(0)
+
+        self.treeWidgetIOSimages.clear()
+        # reload IOS
+        for name in globals.GApp.iosimages.keys():
+            image = globals.GApp.iosimages[name]
+            item = QtGui.QTreeWidgetItem(self.treeWidgetIOSimages)
+            # image name column
+            item.setText(0, name)
+            # chassis column
+            item.setText(1, image.chassis)
 
     def slotDeleteIOS(self):
         """ Delete the selected line from the list of IOS images
@@ -424,13 +438,13 @@ class IOSDialog(QtGui.QDialog, Ui_IOSDialog):
 
                 self.listWidgetHypervisors.clearSelection()
                 if len(conf.hypervisors):
-                    self.checkBoxIntegratedHypervisor.setCheckState(QtCore.Qt.Unchecked)
+                    self.checkBoxIntegratedHypervisor.setCheckState(QtCore.Qt.Checked)
                     for hypervisor in conf.hypervisors:
                         items = self.listWidgetHypervisors.findItems(hypervisor, QtCore.Qt.MatchFixedString)
                         if items:
                             items[0].setSelected(True)
                 else:
-                    self.checkBoxIntegratedHypervisor.setCheckState(QtCore.Qt.Checked)
+                    self.checkBoxIntegratedHypervisor.setCheckState(QtCore.Qt.Unchecked)
         else:
             self.pushButtonDeleteIOS.setEnabled(False)
 
@@ -458,7 +472,7 @@ class IOSDialog(QtGui.QDialog, Ui_IOSDialog):
         if not image_path:
             return
         
-        if self.checkBoxIntegratedHypervisor.checkState() == QtCore.Qt.Unchecked:
+        if self.checkBoxIntegratedHypervisor.checkState() == QtCore.Qt.Checked:
             QtGui.QMessageBox.critical(self, translate("IOSDialog", "Test Settings"), translate("IOSDialog", "Only local IOS images can be tested"))
             return
         
@@ -514,7 +528,7 @@ class IOSDialog(QtGui.QDialog, Ui_IOSDialog):
             state: integer
         """
 
-        if state == QtCore.Qt.Checked:
+        if state == QtCore.Qt.Unchecked:
             self.listWidgetHypervisors.setEnabled(False)
         else:
             self.listWidgetHypervisors.setEnabled(True)
@@ -635,7 +649,7 @@ class IOSDialog(QtGui.QDialog, Ui_IOSDialog):
                 QtGui.QMessageBox.critical(self, translate("IOSDialog", "IOS Configuration"), translate("IOSDialog", "Dynamips path doesn't exist or cannot detect its version, please check Dynamips settings"))
                 return
 
-        if dynamips.detected_version and not LooseVersion(dynamips.detected_version) > '0.2.8-RC4':
+        if dynamips.detected_version and not StrictVersion(dynamips.detected_version.replace("-RC", "b").split('-', 1)[0]) >= '0.2.8b4':
                 QtGui.QMessageBox.critical(self, translate("IOSDialog", "IOS Configuration"), translate("IOSDialog", "You will need Dynamips version 0.2.8-RC4 and above to use this utility.\nVersion detected: %s\nYou have to test the settings in Dynamips preferences to update the detected version.") % dynamips.detected_version)
                 return
         

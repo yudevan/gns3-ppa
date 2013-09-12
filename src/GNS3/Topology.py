@@ -24,6 +24,7 @@ import GNS3.Dynagen.qemu_lib as qlib
 import GNS3.Dynagen.dynagen_vbox_lib as vboxlib
 import GNS3.Globals as globals
 import GNS3.UndoFramework as undo
+import GNS3.Dynagen.portTracker_lib as tracker
 from PyQt4 import QtGui, QtCore
 from GNS3.Utils import translate, debug
 from GNS3.Link.Ethernet import Ethernet
@@ -218,6 +219,7 @@ class Topology(QtGui.QGraphicsScene):
         if self.dynagen.dynamips.has_key(external_hypervisor_key):
             debug("Use an external hypervisor: " + external_hypervisor_key)
             dynamips_hypervisor = self.dynagen.dynamips[external_hypervisor_key]
+            globals.GApp.hypervisors[external_hypervisor_key].used_ram += node.default_ram
         else:
             debug("Connection to an external hypervisor: " + external_hypervisor_key)
             globals.GApp.hypervisors[external_hypervisor_key].used_ram += node.default_ram
@@ -319,7 +321,8 @@ class Topology(QtGui.QGraphicsScene):
         return hostname
 
     def isLocalhost(self, i_host):
-        if i_host == 'localhost' or i_host == '127.0.0.1' or i_host == '::1' or i_host == "0:0:0:0:0:0:0:1":
+        
+        if i_host in tracker.portTracker().local_addresses:
             return True
         else:
             return False
@@ -380,9 +383,8 @@ class Topology(QtGui.QGraphicsScene):
 
             if (globals.GApp.systconf['qemu'].enable_QemuManager and self.isLocalhost(host)) or \
                 (not globals.GApp.systconf['qemu'].enable_QemuManager and globals.GApp.systconf['qemu'].send_path_external_QemuWrapper):
-                qemu_flash_drives_directory = os.path.dirname(globals.GApp.workspace.projectFile) + os.sep + 'qemu-flash-drives'
-                if os.access(qemu_flash_drives_directory, os.F_OK):
-                    workdir = qemu_flash_drives_directory
+                if globals.GApp.workspace.projectFile and os.access(os.path.dirname(globals.GApp.workspace.projectFile) + os.sep + 'qemu-flash-drives', os.F_OK):
+                    workdir = os.path.dirname(globals.GApp.workspace.projectFile) + os.sep + 'qemu-flash-drives'
                 elif globals.GApp.systconf['qemu'].qemuwrapper_workdir:
                     workdir = globals.GApp.systconf['qemu'].qemuwrapper_workdir
                 else:
@@ -1057,6 +1059,7 @@ class Topology(QtGui.QGraphicsScene):
 
         node = self.__nodes[id]
         if isinstance(node, IOSRouter):
+
             try:
 
                 router = node.get_dynagen_device()
@@ -1065,7 +1068,7 @@ class Topology(QtGui.QGraphicsScene):
                     # internal hypervisor
                     image_conf = globals.GApp.iosimages[globals.GApp.systconf['dynamips'].HypervisorManager_binding + ':' + router.image]
                     if globals.GApp.HypervisorManager and len(image_conf.hypervisors) == 0:
-                        globals.GApp.HypervisorManager.unallocateHypervisor(node, router.dynamips.host ,router.dynamips.port)
+                        globals.GApp.HypervisorManager.unallocateHypervisor(node, router.dynamips.host ,router.dynamips.port) 
                 else:
                     # external hypevisor
                     external_hypervisor_key = router.dynamips.host + ':' + str(router.dynamips.port)

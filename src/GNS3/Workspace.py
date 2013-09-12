@@ -161,14 +161,21 @@ class Workspace(QMainWindow, Ui_MainWindow):
                 vpcs_action.setData(QtCore.QVariant("vpcs-start.cmd"))
         elif sys.platform.startswith('darwin'):
             if self.projectConfigs:
-                #vpcs_action.setData(QtCore.QVariant("cd " + self.projectConfigs + " ; " + os.getcwdu() + os.sep + 'vpcs'))
-                vpcs_action.setData(QtCore.QVariant("cd " + self.projectConfigs + " ; " + os.getcwdu() + os.sep + '../Resources/vpcs'))
+                #vpcs_action.setData(QtCore.QVariant("cd \\\"" + self.projectConfigs + "\\\" ; " + os.getcwdu() + os.sep + 'vpcs'))
+                vpcs_action.setData(QtCore.QVariant("cd \\\"" + self.projectConfigs + "\\\" ; " + os.getcwdu() + os.sep + '../Resources/vpcs'))
             else:
                 #vpcs_action.setData(QtCore.QVariant(os.getcwdu() + os.sep + 'vpcs'))
                 vpcs_action.setData(QtCore.QVariant(os.getcwdu() + os.sep + '../Resources/vpcs'))
         else:
-            if self.projectConfigs:
-                vpcs_action.setData(QtCore.QVariant("cd " + self.projectConfigs + " ; vpcs # /vpcs"))
+            result = []
+            for path_dir in os.environ.get('PATH', '').split(os.pathsep):
+                p = os.path.join(path_dir, 'vpcs')
+                if os.access(p, os.X_OK):
+                    result.append(p)
+            if not len(result):
+                vpcs_action = QtGui.QAction(translate("Workspace", "VPCS not installed"), self.menu_Tools)
+            elif self.projectConfigs:
+                vpcs_action.setData(QtCore.QVariant("cd \"" + self.projectConfigs + "\" ; vpcs # /vpcs"))
             else:
                 vpcs_action.setData(QtCore.QVariant('vpcs'))
         self.menu_Tools.addAction(vpcs_action)
@@ -210,14 +217,14 @@ class Workspace(QMainWindow, Ui_MainWindow):
             self.menu_Tools.addAction(vboxwrapper_action)
 
         # Lab instructions
-        if self.projectFile and os.path.exists(os.path.dirname(self.projectFile)):
-            instructions_files = glob.glob(os.path.dirname(self.projectFile) + os.sep + "instructions.*")
-            instructions_files += glob.glob(os.path.dirname(self.projectFile) + os.sep + "instructions" + os.sep + "instructions*")
-            if len(instructions_files):
-                path = instructions_files[0]
-                instructions_action = QtGui.QAction(translate("Workspace", "Instructions"), self.menu_Tools)
-                instructions_action.setData(QtCore.QVariant(path))
-                self.menu_Tools.addAction(instructions_action)
+#         if self.projectFile and os.path.exists(os.path.dirname(self.projectFile)):
+#             instructions_files = glob.glob(os.path.dirname(self.projectFile) + os.sep + "instructions.*")
+#             instructions_files += glob.glob(os.path.dirname(self.projectFile) + os.sep + "instructions" + os.sep + "instructions*")
+#             if len(instructions_files):
+#                 path = instructions_files[0]
+#                 instructions_action = QtGui.QAction(translate("Workspace", "Instructions"), self.menu_Tools)
+#                 instructions_action.setData(QtCore.QVariant(path))
+#                 self.menu_Tools.addAction(instructions_action)
 
     def slotRunTool(self, action):
         """ Run a tool from Tools menu
@@ -225,9 +232,11 @@ class Workspace(QMainWindow, Ui_MainWindow):
 
         if action.text() == translate("Workspace", 'Terminal'):
             runTerminal()
-        elif action.text() == translate("Workspace", "Instructions"):
-            if QtGui.QDesktopServices.openUrl(QtCore.QUrl('file:///' + action.data().toString(), QtCore.QUrl.TolerantMode)) == False:
-                QtGui.QMessageBox.critical(self, translate("Workspace", "Instructions"), translate("Workspace", "Couldn't open " + action.data().toString()))
+#         elif action.text() == translate("Workspace", "Instructions"):
+#             if QtGui.QDesktopServices.openUrl(QtCore.QUrl('file:///' + action.data().toString(), QtCore.QUrl.TolerantMode)) == False:
+#                 QtGui.QMessageBox.critical(self, translate("Workspace", "Instructions"), translate("Workspace", "Couldn't open " + action.data().toString()))
+        elif action.text() == translate("Workspace", "VPCS not installed"):
+            QtGui.QMessageBox.information(self, translate("Workspace", "VPCS"), translate("Workspace", "vpcs must be found in PATH and marked as executable"))
         else:
 #            tool_path = action.data().toString()
             debug("Running tool: %s" % action.data().toString())
@@ -272,6 +281,7 @@ class Workspace(QMainWindow, Ui_MainWindow):
         self.connect(self.action_AboutQt, QtCore.SIGNAL('triggered()'), self.__action_AboutQt)
         self.connect(self.action_CheckForUpdate, QtCore.SIGNAL('triggered()'), self.__action_CheckForUpdate)
         self.connect(self.action_Tips, QtCore.SIGNAL('triggered()'), self.__action_Tips)
+        self.connect(self.action_Instructions, QtCore.SIGNAL('triggered()'), self.__action_Instructions)
         self.connect(self.action_New, QtCore.SIGNAL('triggered()'), self.__action_NewProject)
         self.connect(self.action_SaveProjectAs, QtCore.SIGNAL('triggered()'), self.__action_SaveProjectAs)
         self.connect(self.action_Open, QtCore.SIGNAL('triggered()'), self.__action_OpenFile)
@@ -337,6 +347,19 @@ class Workspace(QMainWindow, Ui_MainWindow):
         separator = self.menu_File.insertSeparator(self.action_Save)
         self.menu_File.insertMenu(separator, self.submenu_RecentFiles)
         self.connect(self.submenu_RecentFiles, QtCore.SIGNAL("triggered(QAction *)"), self.slotLoadRecentFile)
+
+    def __action_Instructions(self, silent=False):
+        
+        # Lab instructions
+        if self.projectFile and os.path.exists(os.path.dirname(self.projectFile)):
+            instructions_files = glob.glob(os.path.dirname(self.projectFile) + os.sep + "instructions.*")
+            instructions_files += glob.glob(os.path.dirname(self.projectFile) + os.sep + "instructions" + os.sep + "instructions*")
+            if len(instructions_files):
+                path = instructions_files[0]
+                if QtGui.QDesktopServices.openUrl(QtCore.QUrl('file:///' + path, QtCore.QUrl.TolerantMode)) == False and silent == False:
+                    QtGui.QMessageBox.critical(self, translate("Workspace", "Instructions"), translate("Workspace", "Couldn't open " + path))
+            elif silent == False:
+                QtGui.QMessageBox.critical(self, translate("Workspace", "Instructions"), translate("Workspace", "No instructions found. Click <a href='http://www.gns3.net/documentation/instructions/'>here</a> to to see how to add instructions to your project"))
 
     def slotLoadRecentFile(self, action):
         """ Called when a file is selected from the Recent Files submenu
@@ -418,11 +441,13 @@ class Workspace(QMainWindow, Ui_MainWindow):
             rect = self.graphicsView.viewport().rect()
             width = rect.width()
             height = rect.height()
- 
+
             pixmap = QtGui.QPixmap(width, height)
             pixmap.fill(QtCore.Qt.white)
             painter = QtGui.QPainter(pixmap)
-            painter.setRenderHint(QtGui.QPainter.Antialiasing)
+            painter.setRenderHint(QtGui.QPainter.Antialiasing, True)
+            painter.setRenderHint(QtGui.QPainter.TextAntialiasing, True)
+            painter.setRenderHint(QtGui.QPainter.SmoothPixmapTransform, True)
 #            if reply == QtGui.QMessageBox.Yes:
 #                self.graphicsView.scene().render(painter, QtCore.QRectF(0,0,pixmap.width(),pixmap.height()), QtCore.QRectF(x, y, width, height))
 #            else:
@@ -1160,6 +1185,7 @@ class Workspace(QMainWindow, Ui_MainWindow):
         """
 
         if self.tips_dialog:
+            self.tips_dialog.timer.start()
             self.tips_dialog.show()
             self.tips_dialog.loadWebPage()
             self.tips_dialog.exec_()
@@ -1431,11 +1457,11 @@ class Workspace(QMainWindow, Ui_MainWindow):
         """ Open snapshot dialog
         """
 
-        snapDialog = SnapshotDialog()
-        snapDialog.setModal(True)
-        snapDialog.show()
-        self.centerDialog(snapDialog)
-        snapDialog.exec_()
+        self.snapDialog = SnapshotDialog()
+        self.snapDialog.setModal(True)
+        self.snapDialog.show()
+        self.centerDialog(self.snapDialog)
+        self.snapDialog.exec_()
 
     def createSnapshot(self, name):
         """ Create a new snapshot of the current topology
@@ -1449,16 +1475,28 @@ class Workspace(QMainWindow, Ui_MainWindow):
 
         projectName = os.path.basename(self.projectFile)
         projectDir = os.path.dirname(self.projectFile)
-        snapshot_dir = projectDir + os.sep + projectName.replace('.net', '') + '_' + name + '_snapshot_' + time.strftime("%d%m%y_%H%M%S")
-        snapshot_workdir = snapshot_dir + os.sep + 'working'
+        snapshotDir = os.path.join(projectDir, 'snapshots')
+        
+        snapshot_workdir = None
+        snapshot_qemu_flash_drives = None
+        snapshot_captures = None
+        snapshot_dir = snapshotDir + os.sep + projectName.replace('.net', '') + '_' + name + '_snapshot_' + time.strftime("%d%m%y_%H%M%S")
         snapshot_configs = snapshot_dir + os.sep + 'configs'
-        snapshot_qemu_flash_drives = snapshot_dir + os.sep + 'qemu-flash-drives'
+
+        if os.path.exists(snapshotDir + os.sep + 'working'):
+            snapshot_workdir = snapshot_dir + os.sep + 'working'
+        if os.path.exists(snapshotDir + os.sep + 'qemu-flash-drives'):
+            snapshot_qemu_flash_drives = snapshot_dir + os.sep + 'qemu-flash-drives'
+        if os.path.exists(snapshotDir + os.sep + 'captures'):
+            snapshot_captures = snapshot_dir + os.sep + 'captures'
 
         try:
             os.mkdir(snapshot_dir)
-            os.mkdir(snapshot_workdir)
-            os.mkdir(snapshot_configs)
-            os.mkdir(snapshot_qemu_flash_drives)
+            #os.mkdir(snapshot_configs)
+            if snapshot_workdir:
+                os.mkdir(snapshot_workdir)
+            if snapshot_qemu_flash_drives:
+                os.mkdir(snapshot_qemu_flash_drives)
         except (OSError, IOError), e:
             QtGui.QMessageBox.critical(self, translate("Workspace", "Snapshot"), translate("Workspace", "Cannot create directories in %s: %s") % (snapshot_dir, e.strerror))
             return
@@ -1468,30 +1506,45 @@ class Workspace(QMainWindow, Ui_MainWindow):
         splash.showMessage(translate("Workspace", "Please wait while creating a snapshot"))
         globals.GApp.processEvents(QtCore.QEventLoop.AllEvents | QtCore.QEventLoop.WaitForMoreEvents, 1000)
 
-        # copy dynamips & Qemu files + IOS configs
+        # save configs directory content
+        try:
+            shutil.copytree(snapshotDir + os.sep + 'configs', snapshot_configs)
+        except (OSError, IOError), e:
+            debug("Warning: cannot copy config files to " + snapshot_configs)
+           
+        # save captures directory content
+        if snapshot_captures:
+            try:
+                shutil.copytree(snapshotDir + os.sep + 'captures', snapshot_captures)
+            except (OSError, IOError), e:
+                debug("Warning: cannot copy capture files to " + snapshot_captures)
+
+        # copy dynamips working directory (only useful files)
         for node in globals.GApp.topology.nodes.values():
             if isinstance(node, IOSRouter):
-                dynamips_files = glob.glob(os.path.normpath(node.hypervisor.workingdir) + os.sep + node.get_platform() + '_' + node.hostname + '_nvram*')
-                dynamips_files += glob.glob(os.path.normpath(node.hypervisor.workingdir) + os.sep + node.get_platform() + '_' + node.hostname + '_disk*')
-                dynamips_files += glob.glob(os.path.normpath(node.hypervisor.workingdir) + os.sep + node.get_platform() + '_' + node.hostname + '_slot*')
-                dynamips_files += glob.glob(os.path.normpath(node.hypervisor.workingdir) + os.sep + node.get_platform() + '_' + node.hostname + '_rom')
-                dynamips_files += glob.glob(os.path.normpath(node.hypervisor.workingdir) + os.sep + node.get_platform() + '_' + node.hostname + '_*flash*')
-                for file in dynamips_files:
-                    try:
-                        shutil.copy(file, snapshot_workdir)
-                    except (OSError, IOError), e:
-                        debug("Warning: cannot copy " + file + " to " + snapshot_workdir + ": " + e.strerror)
-                        continue
+                if snapshot_workdir:
+                    dynamips_files = glob.glob(os.path.normpath(node.hypervisor.workingdir) + os.sep + node.get_platform() + '_' + node.hostname + '_nvram*')
+                    dynamips_files += glob.glob(os.path.normpath(node.hypervisor.workingdir) + os.sep + node.get_platform() + '_' + node.hostname + '_disk*')
+                    dynamips_files += glob.glob(os.path.normpath(node.hypervisor.workingdir) + os.sep + node.get_platform() + '_' + node.hostname + '_slot*')
+                    dynamips_files += glob.glob(os.path.normpath(node.hypervisor.workingdir) + os.sep + node.get_platform() + '_' + node.hostname + '_rom')
+                    dynamips_files += glob.glob(os.path.normpath(node.hypervisor.workingdir) + os.sep + node.get_platform() + '_' + node.hostname + '_*flash*')
+                    for file in dynamips_files:
+                        try:
+                            shutil.copy(file, snapshot_workdir)
+                        except (OSError, IOError), e:
+                            debug("Warning: cannot copy " + file + " to " + snapshot_workdir + ": " + e.strerror)
+                            continue
+
                 if node.router.cnfg:
                     try:
                         shutil.copy(node.router.cnfg, snapshot_configs)
                     except (OSError, IOError), e:
-                        debug("Warning: cannot copy " + file + " to " + snapshot_configs)
+                        debug("Warning: cannot copy " + node.router.cnfg + " to " + snapshot_configs)
                         continue
                     config = os.path.basename(node.router.cnfg)
                     node.router.cnfg = snapshot_configs + os.sep + config
 
-            if isinstance(node, AnyEmuDevice):
+            if snapshot_qemu_flash_drives and isinstance(node, AnyEmuDevice):
                 qemu_files = glob.glob(os.path.normpath(node.qemu.workingdir) + os.sep + node.hostname)
                 for file in qemu_files:
                     try:
@@ -1502,9 +1555,9 @@ class Workspace(QMainWindow, Ui_MainWindow):
 
         try:
             for hypervisor in globals.GApp.dynagen.dynamips.values():
-                if isinstance(hypervisor, qemu_lib.Qemu):
+                if snapshot_qemu_flash_drives and isinstance(hypervisor, qemu_lib.Qemu):
                     hypervisor.workingdir = snapshot_qemu_flash_drives
-                else:
+                elif snapshot_workdir:
                     hypervisor.workingdir = snapshot_workdir
         except lib.DynamipsError, msg:
             QtGui.QMessageBox.critical(self, translate("Workspace", "Dynamips error"), translate("Workspace", "Dynamips error: %s") % msg)
@@ -1517,7 +1570,7 @@ class Workspace(QMainWindow, Ui_MainWindow):
         self.projectConfigs = snapshot_configs
         self.projectWorkdir = snapshot_workdir
         self.projectFile = unicode(snapshot_dir + os.sep + projectName)
-        self.__action_Save(auto=True)
+        self.__action_Save(auto=True, add_too_recent_files=False)
         self.projectFile = save_projectFile
         self.projectConfigs = save_cfg
         self.projectWorkdir = save_wd
@@ -1539,6 +1592,89 @@ class Workspace(QMainWindow, Ui_MainWindow):
                         node.router.cnfg = self.projectConfigs + os.sep + config
         except lib.DynamipsError, msg:
             QtGui.QMessageBox.critical(self, translate("Workspace", "Dynamips error"), translate("Workspace", "Dynamips error!!: %s") % msg)
+
+    def restoreSnapshot(self, path):
+        """ Restore a previously created snapshot
+        """
+
+        # close snapshot dialog
+        self.snapDialog.close()
+
+        # stop all captures
+        globals.GApp.mainWindow.capturesDock.stopAllCaptures()
+
+        # stop all the devices
+        for node in globals.GApp.topology.nodes.values():
+            if isinstance(node, IOSRouter) or isinstance(node, AnyEmuDevice):
+                node.stopNode()
+
+        working_dir = os.path.dirname(path) + os.sep + 'working'
+        config_dir = os.path.dirname(path) + os.sep + 'configs'
+        capture_dir = os.path.dirname(path) + os.sep + 'captures'
+        qemu_flash_drives = os.path.dirname(path) + os.sep + 'qemu-flash-drives'
+
+        parent_project_dir = os.path.normpath(os.path.dirname(path) + os.sep + '..' + os.sep + '..' + os.sep)
+        parent_working_dir = parent_project_dir + os.sep + 'working'
+        parent_qemu_flash_drives = parent_project_dir + os.sep + 'qemu-flash-drives'
+        parent_config_dir = parent_project_dir + os.sep + 'configs'
+        parent_capture_dir = parent_project_dir + os.sep + 'captures'
+
+        try:
+            shutil.copyfile(path, parent_project_dir + os.sep + 'topology.net')
+        except (OSError, IOError), e:
+            debug("Warning: cannot copy topology.net to " + parent_project_dir)
+            
+        try:
+            shutil.copyfile(os.path.dirname(path) + os.sep + 'topology.png', parent_project_dir + os.sep + 'topology.png')
+        except (OSError, IOError), e:
+            debug("Warning: cannot copy topology.png to " + parent_project_dir)
+
+        shutil.rmtree(parent_config_dir, ignore_errors=True)
+        try:
+            shutil.copytree(config_dir, parent_config_dir)
+        except (OSError, IOError), e:
+            debug("Warning: cannot copy config files to " + parent_config_dir)   
+        
+        if os.path.exists(working_dir):
+            # delete useless working dir files
+            workdir_files = glob.glob(working_dir + os.sep + "*ghost*")
+            workdir_files += glob.glob(working_dir + os.sep + "ilt_*")
+            workdir_files += glob.glob(working_dir + os.sep + "*_lock")
+            workdir_files += glob.glob(working_dir + os.sep + "c[0-9][0-9][0-9][0-9]_*_log.txt")
+            workdir_files += glob.glob(working_dir + os.sep + "c[0-9][0-9][0-9][0-9]_*_rommon_vars")
+            workdir_files += glob.glob(working_dir + os.sep + "c[0-9][0-9][0-9][0-9]_*_ssa")
+            for file in workdir_files:
+                try:
+                    debug("DELETING %s" % file)
+                    os.remove(file)
+                except (OSError, IOError), e:
+                    continue
+            
+            shutil.rmtree(parent_working_dir, ignore_errors=True)
+            try:
+                shutil.copytree(working_dir, parent_working_dir)
+            except (OSError, IOError), e:
+                debug("Warning: cannot copy working files to " + parent_working_dir)            
+
+        if os.path.exists(qemu_flash_drives):
+            shutil.rmtree(parent_qemu_flash_drives, ignore_errors=True)
+            try:
+                shutil.copytree(qemu_flash_drives, parent_qemu_flash_drives)
+            except (OSError, IOError), e:
+                debug("Warning: cannot copy Qemu files to " + parent_qemu_flash_drives)
+                
+        if os.path.exists(capture_dir):       
+            shutil.rmtree(parent_capture_dir, ignore_errors=True)
+            try:
+                shutil.copytree(capture_dir, parent_capture_dir)
+            except (OSError, IOError), e:
+                debug("Warning: cannot copy capture files to " + parent_capture_dir)
+
+        self.load_netfile(parent_project_dir + os.sep + 'topology.net')
+        self.projectConfigs = parent_project_dir + os.sep + 'configs'
+        self.projectWorkdir = parent_project_dir + os.sep + 'working'
+        self.projectFile = parent_project_dir + os.sep + 'topology.net'
+        #debug("SNAPSHOT RESTORED")
 
     def __action_OpenFile(self):
         """ Open a file
@@ -1643,6 +1779,7 @@ class Workspace(QMainWindow, Ui_MainWindow):
             self.load_netfile(path)
             self.__addToRecentFiles(path)
             globals.GApp.topology.changed = False
+            self.__action_Instructions(silent=True)
         except IOError, (errno, strerror):
             QtGui.QMessageBox.critical(self, 'Open',  u'Open: ' + strerror)
         except (lib.DynamipsErrorHandled, socket.error):
@@ -1656,7 +1793,7 @@ class Workspace(QMainWindow, Ui_MainWindow):
         print translate("Workspace", "%s: Auto-saving ... Next one in %s seconds" % (curtime, str(globals.GApp.systconf['general'].autosave)))
         self.__action_Save(auto=True)
 
-    def __action_Save(self, auto=False):
+    def __action_Save(self, auto=False, add_too_recent_files=True):
         """ Save to a file (scenario or dynagen .NET format)
         """
 
@@ -1666,7 +1803,8 @@ class Workspace(QMainWindow, Ui_MainWindow):
         try:
             net = netfile.NETFile()
             net.export_net_file(self.projectFile, auto)
-            self.__addToRecentFiles(self.projectFile)
+            if add_too_recent_files:
+                self.__addToRecentFiles(self.projectFile)
 
             # unbase the qemu disk
             if self.unbase == True:

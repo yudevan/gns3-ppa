@@ -884,7 +884,7 @@ class Scene(QtGui.QGraphicsView):
         """
 
         factor = self.matrix().scale(scale_factor, scale_factor).mapRect(QtCore.QRectF(0, 0, 1, 1)).width()
-        if (factor < 0.20 or factor > 5):
+        if (factor < 0.10 or factor > 10):
             return
         self.scale(scale_factor, scale_factor)
 
@@ -1115,9 +1115,9 @@ class Scene(QtGui.QGraphicsView):
             globals.GApp.scene.setCursor(QtCore.Qt.ArrowCursor)
         else:
             if item is not None and not event.modifiers() & QtCore.Qt.ShiftModifier:
-                item.setSelected(False)
-                for other_item in self.__topology.selectedItems():
-                    other_item.setSelected(False)
+                item.setSelected(True)
+                #for other_item in self.__topology.selectedItems():
+                #    other_item.setSelected(False)
             QtGui.QGraphicsView.mouseReleaseEvent(self, event)
 
     def mouseDoubleClickEvent(self, event):

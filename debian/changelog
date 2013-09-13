@@ -1,3 +1,13 @@
+gns3 (0.8.5-0ppa1) quantal; urgency=low
+
+  * Fixed debian/changelog
+  * Exclude additional license from dynagen scripts
+  * debian/control: Added VCS Fields and additional dependencies 
+  * debian/copyright: Added dynagen copyright
+  * Imported Upstream version 0.8.5
+
+ -- Daniel Lintott <daniel@serverb.co.uk>  Fri, 13 Sep 2013 11:53:03 +0100
+
 gns3 (0.8.4-1ppa1) quantal; urgency=low
 
   * Imported Upstream Version 0.8.4

@@ -1,5 +1,6 @@
 gns3 (0.8.5-0ppa1) quantal; urgency=low
 
+  * Include debian/watch file
   * Fixed debian/changelog
   * Exclude additional license from dynagen scripts
   * debian/control: Added VCS Fields and additional dependencies 

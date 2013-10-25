@@ -1,0 +1,14 @@
+#! /bin/sh
+# postinst script for gns3
+
+set -e
+
+#Create conf directory if required
+if [ "$1" = "configure" ]; then
+	if [ ! -d /etc/gns3 ]
+	then
+		mkdir /etc/gns3
+	fi
+fi
+
+#DEBHELPER#

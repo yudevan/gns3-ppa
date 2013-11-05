@@ -1,3 +1,10 @@
+gns3 (0.8.6-1~ppa3) quantal; urgency=low
+
+  * [4953970d] Fix segmentation fault (LP: #1152884)
+  * [a5768965] Update packaging
+
+ -- Daniel Lintott <daniel@serverb.co.uk>  Tue, 05 Nov 2013 16:10:17 +0000
+
 gns3 (0.8.6-1~ppa2) quantal; urgency=low
 
   * [0243732b] [control] Update VCS fields

@@ -1,3 +1,14 @@
+gns3 (0.8.6-1~ppa4) quantal; urgency=low
+
+  * [7d75d02d] Add Spanish translation patch
+  * [d37eb878] debian/control     
+		+ Bump Standards Version to 3.9.5 (No changes)     
+		+ Add build-depends on libqt4-dev debian/rules     
+	       debian/rules
+		+ Regenerate qt translation files at build time
+
+ -- Daniel Lintott <daniel@serverb.co.uk>  Mon, 10 Feb 2014 19:39:26 +0000
+
 gns3 (0.8.6-1~ppa3) quantal; urgency=low
 
   * [4953970d] Fix segmentation fault (LP: #1152884)

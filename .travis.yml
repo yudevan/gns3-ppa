@@ -4,7 +4,7 @@ python:
 # command to install dependencies
 install: "sudo apt-get install devscripts debhelper pristine-tar libqt4-dev"
 # command to pull other branches and generate pristine-tar
-before_script: "pristine-tar ../gns3_0.8.6.orig.tar.gz"
+before_script: "pristine-tar checkout ../gns3_0.8.6.orig.tar.gz"
 # command to build package
 script: "debuild -us -uc"
 

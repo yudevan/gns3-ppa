@@ -2,6 +2,9 @@ language: python
 python:
   - "2.7"
 # command to install dependencies
-install: "sudo apt-get install devscripts debhelper libqt4-dev"
-# command to run tests
+install: "sudo apt-get install devscripts debhelper pristine-tar libqt4-dev"
+# command to pull other branches and generate pristine-tar
+before-script: "pristine-tar ../gns3_0.8.6.orig.tar.gz"
+# command to build package
 script: "debuild -us -uc"
+

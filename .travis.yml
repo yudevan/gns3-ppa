@@ -1,0 +1,7 @@
+language: python
+python:
+  - "2.7"
+# command to install dependencies
+install: "apt-get install debhelper libqt4-dev"
+# command to run tests
+script: "debuild -us -uc"
